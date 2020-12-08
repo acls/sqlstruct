@@ -11,6 +11,9 @@ import (
 type EmbeddedType struct {
 	FieldE string `sql:"field_e"`
 }
+type EmbeddedType2 struct {
+	FieldF string `sql:"field_f"`
+}
 
 type testType struct {
 	FieldA  string `sql:"field_a"`
@@ -18,6 +21,8 @@ type testType struct {
 	FieldC  string `sql:"field_C"` // Different letter case
 	Field_D string // Field name is used
 	EmbeddedType
+	E2 EmbeddedType2
+	E3 EmbeddedType2 // duplicate
 }
 
 type testType2 struct {
@@ -59,7 +64,7 @@ func (r *testRows) addValue(c string, v interface{}) {
 
 func TestColumns(t *testing.T) {
 	var v testType
-	e := "field_a, field_c, field_d, field_e"
+	e := "field_a, field_c, field_d, field_e, field_f"
 	c := Columns(v)
 
 	if c != e {
@@ -72,7 +77,7 @@ func TestColumnsAliased(t *testing.T) {
 	var t2 testType2
 
 	expected := "t1.field_a AS t1_field_a, t1.field_c AS t1_field_c, "
-	expected += "t1.field_d AS t1_field_d, t1.field_e AS t1_field_e"
+	expected += "t1.field_d AS t1_field_d, t1.field_e AS t1_field_e, t1.field_f AS t1_field_f"
 	actual := ColumnsAliased(t1, "t1")
 
 	if expected != actual {
@@ -94,8 +99,9 @@ func TestScan(t *testing.T) {
 	rows.addValue("field_c", "c")
 	rows.addValue("field_d", "d")
 	rows.addValue("field_e", "e")
+	rows.addValue("field_f", "f")
 
-	e := testType{"a", "", "c", "d", EmbeddedType{"e"}}
+	e := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}}
 
 	var r testType
 	err := Scan(&r, rows)
@@ -115,10 +121,11 @@ func TestScanAliased(t *testing.T) {
 	rows.addValue("t1_field_c", "c")
 	rows.addValue("t1_field_d", "d")
 	rows.addValue("t1_field_e", "e")
+	rows.addValue("t1_field_f", "f")
 	rows.addValue("t2_field_a", "a2")
 	rows.addValue("t2_field_sec", "sec")
 
-	expected := testType{"a", "", "c", "d", EmbeddedType{"e"}}
+	expected := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}}
 	var actual testType
 	err := ScanAliased(&actual, rows, "t1")
 	if err != nil {

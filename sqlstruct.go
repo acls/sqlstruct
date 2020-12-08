@@ -146,8 +146,11 @@ func getFieldInfo(typ reflect.Type) fieldInfo {
 		}
 
 		// Handle embedded structs
-		if f.Anonymous && f.Type.Kind() == reflect.Struct {
+		if f.Type.Kind() == reflect.Struct {
 			for k, v := range getFieldInfo(f.Type) {
+				if _, ok := finfo[k]; ok {
+					continue // skip duplicates
+				}
 				finfo[k] = append([]int{i}, v...)
 			}
 			continue
