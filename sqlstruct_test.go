@@ -14,6 +14,12 @@ type EmbeddedType struct {
 type EmbeddedType2 struct {
 	FieldF string `sql:"field_f"`
 }
+type Nested struct {
+	Item NestedItem
+}
+type NestedItem struct {
+	FieldG string `sql:"field_g"`
+}
 
 type testType struct {
 	FieldA  string `sql:"field_a"`
@@ -21,8 +27,9 @@ type testType struct {
 	FieldC  string `sql:"field_C"` // Different letter case
 	Field_D string // Field name is used
 	EmbeddedType
-	E2 EmbeddedType2
-	E3 EmbeddedType2 // duplicate
+	E2     EmbeddedType2
+	E3     EmbeddedType2 // duplicate
+	Nested Nested
 }
 
 type testType2 struct {
@@ -42,6 +49,7 @@ func (r testRows) Scan(dest ...interface{}) error {
 			// There is no field mapped to this column so we discard it
 			continue // ignore nil dest values
 		}
+
 		v := reflect.ValueOf(dest[i])
 		if v.Kind() != reflect.Ptr {
 			panic("Not a pointer!")
@@ -68,7 +76,7 @@ func (r *testRows) addValue(c string, v interface{}) {
 
 func TestColumns(t *testing.T) {
 	var v testType
-	e := "field_a, field_c, field_d, field_e, field_f"
+	e := "field_a, field_c, field_d, field_e, field_f, field_g"
 	c := Columns(v)
 
 	if c != e {
@@ -81,7 +89,8 @@ func TestColumnsAliased(t *testing.T) {
 	var t2 testType2
 
 	expected := "t1.field_a AS t1_field_a, t1.field_c AS t1_field_c, "
-	expected += "t1.field_d AS t1_field_d, t1.field_e AS t1_field_e, t1.field_f AS t1_field_f"
+	expected += "t1.field_d AS t1_field_d, t1.field_e AS t1_field_e, "
+	expected += "t1.field_f AS t1_field_f, t1.field_g AS t1_field_g"
 	actual := ColumnsAliased(t1, "t1")
 
 	if expected != actual {
@@ -104,8 +113,9 @@ func TestScan(t *testing.T) {
 	rows.addValue("field_d", "d")
 	rows.addValue("field_e", "e")
 	rows.addValue("field_f", "f")
+	rows.addValue("field_g", "g")
 
-	e := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}}
+	e := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}, Nested{NestedItem{"g"}}}
 
 	var r testType
 	err := Scan(&r, rows)
@@ -126,10 +136,11 @@ func TestScanAliased(t *testing.T) {
 	rows.addValue("t1_field_d", "d")
 	rows.addValue("t1_field_e", "e")
 	rows.addValue("t1_field_f", "f")
+	rows.addValue("t1_field_g", "g")
 	rows.addValue("t2_field_a", "a2")
 	rows.addValue("t2_field_sec", "sec")
 
-	expected := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}}
+	expected := testType{"a", "", "c", "d", EmbeddedType{"e"}, EmbeddedType2{"f"}, EmbeddedType2{""}, Nested{NestedItem{"g"}}}
 	var actual testType
 	err := ScanAliased(&actual, rows, "t1")
 	if err != nil {
