@@ -38,6 +38,10 @@ type testRows struct {
 
 func (r testRows) Scan(dest ...interface{}) error {
 	for i := range r.values {
+		if dest[i] == nil {
+			// There is no field mapped to this column so we discard it
+			continue // ignore nil dest values
+		}
 		v := reflect.ValueOf(dest[i])
 		if v.Kind() != reflect.Ptr {
 			panic("Not a pointer!")
